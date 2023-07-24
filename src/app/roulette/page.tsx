@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import "./style.css";
@@ -12,11 +12,16 @@ const IndexPage: React.FC = () => {
   const [maxScore, setMaxScore] = useState<number>(0);
   const [userNumbers, setUserNumbers] = useState<number[]>([]);
   const [cpuNumbers, setCpuNumbers] = useState<number[]>([]);
-  const [drawnNumbersSet, setDrawnNumbersSet] = useState<Set<number>>(new Set()); // Sử dụng Set để lưu trữ các số đã rút ra
+  const [drawnNumbersSet, setDrawnNumbersSet] = useState<Set<number>>(
+    new Set()
+  ); // Sử dụng Set để lưu trữ các số đã rút ra
   const [isAutomatic, setIsAutomatic] = useState<boolean>(false);
   const [isGameEnded, setIsGameEnded] = useState<boolean>(false);
   const [userAcerts, setUserAcerts] = useState<number>(0);
-const [cpuAcerts, setCpuAcerts] = useState<number>(0);
+  const [cpuAcerts, setCpuAcerts] = useState<number>(0);
+
+  const [betAmount, setBetAmount] = useState<number>(0);
+  const [totalMoney, setTotalMoney] = useState<number>(1000); // Số tiền ban đầu của người chơi
 
   useEffect(() => {
     const maxScoreValue = parseInt(localStorage.getItem("maxScore") || "0", 10);
@@ -24,6 +29,22 @@ const [cpuAcerts, setCpuAcerts] = useState<number>(0);
     setUserNumbers(fifteenRandomNumbers());
     setCpuNumbers(fifteenRandomNumbers());
   }, []);
+
+  const startGame = () => {
+    if (betAmount <= totalMoney) {
+      setTotalMoney(totalMoney - betAmount);
+      setDrawnNumbersSet(new Set()); // Reset Set các số đã rút
+      setIsGameEnded(false);
+      setIsAutomatic(false);
+      setBalls(initialBalls);
+      setCurrentNumber(null);
+      setUserAcerts(0);
+      setCpuAcerts(0);
+      randomNumberDraw();
+    } else {
+      alert("Not enough money to place the bet!");
+    }
+  };
 
   let automaticInterval: NodeJS.Timeout | null = null;
 
@@ -70,8 +91,12 @@ const [cpuAcerts, setCpuAcerts] = useState<number>(0);
   };
 
   const checkWinner = () => {
-    const userAcerts = userNumbers.filter((num) => drawnNumbersSet.has(num)).length; // Sử dụng Set để kiểm tra số đã rút
-    const cpuAcerts = cpuNumbers.filter((num) => drawnNumbersSet.has(num)).length; // Sử dụng Set để kiểm tra số đã rút
+    const userAcerts = userNumbers.filter((num) =>
+      drawnNumbersSet.has(num)
+    ).length; // Sử dụng Set để kiểm tra số đã rút
+    const cpuAcerts = cpuNumbers.filter((num) =>
+      drawnNumbersSet.has(num)
+    ).length; // Sử dụng Set để kiểm tra số đã rút
 
     if (userAcerts === 15) {
       setIsGameEnded(true);
@@ -81,10 +106,35 @@ const [cpuAcerts, setCpuAcerts] = useState<number>(0);
         setMaxScore(balls.length);
         localStorage.setItem("maxScore", balls.length.toString());
       }
+
+      // ... (code xử lý khi người chơi thắng cuộc)
+      // Cộng số tiền thắng vào tổng số tiền của người chơi
+      setTotalMoney(totalMoney + betAmount * 2);
+      // Lưu thông tin trận đấu vào localStorage
+      const matchResult = {
+        result: "win",
+        score: balls.length,
+        bet: betAmount,
+        totalMoney: totalMoney + betAmount * 2,
+      };
+      localStorage.setItem("matchResult", JSON.stringify(matchResult));
     } else if (cpuAcerts === 15) {
       setIsGameEnded(true);
-      alert(`Perdiste, la ganadora es la CPU! Quedaron en el bolillero ${balls.length} bolas`);
+      alert(
+        `Perdiste, la ganadora es la CPU! Quedaron en el bolillero ${balls.length} bolas`
+      );
       onStopAutomatic();
+
+      // ... (code xử lý khi người chơi thua)
+      setTotalMoney((prev) => prev - betAmount);
+      // Lưu thông tin trận đấu vào localStorage
+      const matchResult = {
+        result: "lose",
+        score: balls.length,
+        bet: betAmount,
+        totalMoney: totalMoney,
+      };
+      localStorage.setItem("matchResult", JSON.stringify(matchResult));
     }
   };
 
@@ -121,19 +171,18 @@ const [cpuAcerts, setCpuAcerts] = useState<number>(0);
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
 
   const resetGame = () => {
-  // Khởi tạo lại các state
-  setMaxScore(0);
-  setUserNumbers(fifteenRandomNumbers());
-  setCpuNumbers(fifteenRandomNumbers());
-  setDrawnNumbersSet(new Set());
-  setIsAutomatic(false);
-  setIsGameEnded(false);
-  setBalls(initialBalls);
-  setCurrentNumber(null);
-  setUserAcerts(0);
-  setCpuAcerts(0);
-};
-
+    // Khởi tạo lại các state
+    setMaxScore(0);
+    setUserNumbers(fifteenRandomNumbers());
+    setCpuNumbers(fifteenRandomNumbers());
+    setDrawnNumbersSet(new Set());
+    setIsAutomatic(false);
+    setIsGameEnded(false);
+    setBalls(initialBalls);
+    setCurrentNumber(null);
+    setUserAcerts(0);
+    setCpuAcerts(0);
+  };
 
   return (
     <>
@@ -142,21 +191,39 @@ const [cpuAcerts, setCpuAcerts] = useState<number>(0);
       </Head>
       <Score maxScore={maxScore} />
       <section className="competidores">
-        <PlayerBoard userNumbers={userNumbers} drawnNumbersSet={drawnNumbersSet} /> 
+        <PlayerBoard
+          userNumbers={userNumbers}
+          drawnNumbersSet={drawnNumbersSet}
+        />
         <div className="mezclador">
           <p id="numberDraw" onClick={randomNumberDraw}>
             {currentNumber !== null ? currentNumber : "Start"}
           </p>
         </div>
-        <CpuBoard cpuNumbers={cpuNumbers} drawnNumbersSet={drawnNumbersSet} /> 
+        <CpuBoard cpuNumbers={cpuNumbers} drawnNumbersSet={drawnNumbersSet} />
       </section>
       <AutomaticButton
         onAutomatic={onAutomatic}
         onStopAutomatic={onStopAutomatic}
         isAutomatic={isAutomatic}
       />
-      <NumberContainer numbers={Array.from(drawnNumbersSet)} renderNumberColor={renderNumberColor} /> 
+      <NumberContainer
+        numbers={Array.from(drawnNumbersSet)}
+        renderNumberColor={renderNumberColor}
+      />
+      <input
+        type="number"
+        value={betAmount}
+        onChange={(e) => setBetAmount(parseInt(e.target.value))}
+        min={0}
+        max={totalMoney}
+      />
+      <button onClick={startGame}>Start Game</button>
+
       <button onClick={resetGame}>Reset</button>
+      {
+        <div>Remain: ${totalMoney}</div>
+      }
     </>
   );
 };
