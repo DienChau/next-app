@@ -15,6 +15,8 @@ const IndexPage: React.FC = () => {
   const [drawnNumbersSet, setDrawnNumbersSet] = useState<Set<number>>(new Set()); // Sử dụng Set để lưu trữ các số đã rút ra
   const [isAutomatic, setIsAutomatic] = useState<boolean>(false);
   const [isGameEnded, setIsGameEnded] = useState<boolean>(false);
+  const [userAcerts, setUserAcerts] = useState<number>(0);
+const [cpuAcerts, setCpuAcerts] = useState<number>(0);
 
   useEffect(() => {
     const maxScoreValue = parseInt(localStorage.getItem("maxScore") || "0", 10);
@@ -118,6 +120,21 @@ const IndexPage: React.FC = () => {
   const [balls, setBalls] = useState<number[]>(initialBalls);
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
 
+  const resetGame = () => {
+  // Khởi tạo lại các state
+  setMaxScore(0);
+  setUserNumbers(fifteenRandomNumbers());
+  setCpuNumbers(fifteenRandomNumbers());
+  setDrawnNumbersSet(new Set());
+  setIsAutomatic(false);
+  setIsGameEnded(false);
+  setBalls(initialBalls);
+  setCurrentNumber(null);
+  setUserAcerts(0);
+  setCpuAcerts(0);
+};
+
+
   return (
     <>
       <Head>
@@ -139,6 +156,7 @@ const IndexPage: React.FC = () => {
         isAutomatic={isAutomatic}
       />
       <NumberContainer numbers={Array.from(drawnNumbersSet)} renderNumberColor={renderNumberColor} /> 
+      <button onClick={resetGame}>Reset</button>
     </>
   );
 };
